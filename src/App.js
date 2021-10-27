@@ -136,7 +136,7 @@ const App = () => {
         I am chukky_cool an expert in smart-contract dev, allow me to make your dreams come true. Connect your Ethereum wallet and wave at me!
         </div>
 
-        <input type='text'></input>
+        <input type='text'placeholder="Wave a message"></input>
 
         <button className="waveButton" onClick={wave}>
           Wave at Me
