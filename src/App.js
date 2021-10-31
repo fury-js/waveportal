@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react";
+   import React, { useEffect, useState } from "react";
 import { ethers } from "ethers";
 import './App.css';
 import abi from "./utils/WavePortal.json"
 
 const App = () => {
-  const contractAddress = "0xf2d65e43cC6108DAac1782025A4c80d7E179e380";
+  const contractAddress = "0xf7559bF9460C5713348Dd84E854dCA74EE9948fA";
   const contractABI = abi.abi;
   /*
   * Just a state variable we use to store our user's public wallet.
@@ -12,6 +12,7 @@ const App = () => {
   const [currentAccount, setCurrentAccount] = useState("");
   const [waveCount, setWaveCount] = useState('')
   const [allWaves, setAllWaves] = useState([])
+  const [message, setMessage ] = useState('')
   
   const checkIfWalletIsConnected = async () => {
     try {
@@ -41,6 +42,9 @@ const App = () => {
     } catch (error) {
       console.log(error);
     }
+  }
+  const onInputChange = (e) => {
+    setMessage(e.target.value)
   }
 
   const connectWallet = async () => {
@@ -72,7 +76,7 @@ const App = () => {
         let count = await wavePortalContract.getTotalWaves()
         console.log("Retreived total wave count:", count.toNumber())
 
-        let waveTxn = await wavePortalContract.wave("my test wave")
+        let waveTxn = await wavePortalContract.wave(message, { gasLimit: 300000 })
         console.log("Mining....", waveTxn.hash);
 
         await waveTxn.wait();
@@ -123,6 +127,39 @@ const App = () => {
   useEffect(() => {
     checkIfWalletIsConnected();
   }, [])
+
+// Event listener
+  useEffect( () => {
+    let wavePortalContract;
+
+    const onNewWave = (from, timestamp, message ) => {
+      console.log("New Wave:", from, timestamp, message)
+
+      setAllWaves(prevState => [
+        ...prevState, {
+          address: from,
+          timestamp: new Date(timestamp * 1000),
+          message: message,
+        }
+      ])
+
+    }
+    if(window.ethereum) {
+        const provider = new ethers.providers.Web3Provider(window.ethereum)
+
+        const signer = provider.getSigner()
+
+        wavePortalContract = new ethers.Contract(contractAddress, contractABI, signer)
+        wavePortalContract.on("NewWave", onNewWave)
+    }
+
+    return () => {
+      if(wavePortalContract) {
+        wavePortalContract.off("NewWave", onNewWave)
+      }
+    }
+
+  }, [])
   
   return (
     <div className="mainContainer">
@@ -136,7 +173,7 @@ const App = () => {
         I am chukky_cool an expert in smart-contract dev, allow me to make your dreams come true. Connect your Ethereum wallet and wave at me!
         </div>
 
-        <input type='text'placeholder="Wave a message"></input>
+        <input type='text'placeholder="Wave a message" onChange={onInputChange}></input>
 
         <button className="waveButton" onClick={wave}>
           Wave at Me
